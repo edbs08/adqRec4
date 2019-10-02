@@ -13,11 +13,13 @@ GLWidget::GLWidget(QWidget *parent) : QOpenGLWidget(parent)
      QWidget::setFocusPolicy(Qt::FocusPolicy::StrongFocus);
 }
 
-GLWidget::~GLWidget() {}
+GLWidget::~GLWidget() {
+}
 
 
 void GLWidget::loadFaces(const QString &path) {
     string file_type = getFileExt(path);
+    clear_variables();
     if(file_type == "json")
     {
         /*Implementation for json*/
@@ -49,9 +51,10 @@ void GLWidget::loadFaces(const QString &path) {
 
     }
 
+    zoomScale = face_collection.init_scale;
     initializeGL();
     // update the display inside the widget
-    paintGL();
+    //paintGL();
 }
 
 string GLWidget::getFileExt(const QString& qs) {
@@ -63,6 +66,18 @@ string GLWidget::getFileExt(const QString& qs) {
    }
 
    return("");
+}
+
+void GLWidget::clear_variables(void)
+{
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    zoomScale = 1;
+    first_paint = true;
+
 }
 void GLWidget::initializeGL() {
     glClearColor(0.6f, 0.8f, 1.0f, 1.0f); // Set background color
@@ -77,18 +92,11 @@ void GLWidget::initializeGL() {
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    if(face_collection.init==true)
-    {
-        cout<< "********** init"<<endl;
-        glScalef(face_collection.init_scale, face_collection.init_scale, face_collection.init_scale);
-        zoomScale = face_collection.init_scale;
-    }
 
     glDisable(GL_LIGHTING );
 }
 
 void GLWidget::paintGL() {
-    cout<< "********** paintGL"<<endl;
     QSize viewport_size = size();
     glViewport(0, 0, viewport_size.width(), viewport_size.height());
     float ar = (float) viewport_size.width() / (float) viewport_size.height();
@@ -109,22 +117,34 @@ void GLWidget::paintGL() {
     /*
    *  Config Model View Matrix  GL_MODELVIEW
    */
-  glMatrixMode(GL_MODELVIEW);
-  glGetFloatv(GL_MODELVIEW_MATRIX, m);
-  glLoadIdentity();
-  /*Rotation*/
-  glRotatef(rotation_angle,rotation.y(),rotation.x(),0.0f);
-  rotation_angle = 0;
-  /*Translation*/
-  glTranslatef(translation.x(),translation.y(),0.0f);
-  translation.rx()=0;
-  translation.ry()=0;
-  /*Scale*/
-  glScalef(zoomScale, zoomScale, zoomScale);
-  zoomScale = 1;
+    if (true == first_paint)
+    {
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        first_paint = false;
+        cout<<"first paint"<<endl;
+    }
+    else
+    {
+        glMatrixMode(GL_MODELVIEW);
+        glGetFloatv(GL_MODELVIEW_MATRIX, m);
+        glLoadIdentity();
+        /*Rotation*/
+        glRotatef(rotation_angle,rotation.y(),rotation.x(),0.0f);
+        rotation_angle = 0;
+        /*Translation*/
+        glTranslatef(translation.x(),translation.y(),0.0f);
+        translation.rx()=0;
+        translation.ry()=0;
+        /*Scale*/
+        glScalef(zoomScale, zoomScale, zoomScale);
+        zoomScale = 1;
 
-  glMultMatrixf(m);
-  glGetFloatv(GL_MODELVIEW_MATRIX, m);
+        glMultMatrixf(m);
+        glGetFloatv(GL_MODELVIEW_MATRIX, m);
+
+    }
+
 
     /* Print the matrix */
 

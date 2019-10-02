@@ -36,8 +36,11 @@ public:
   void loadFaces(const QString &path);
   void getAlpha(int);
   void get_sorting_index(int index);
-
+  int counter = 0;
+  bool first_paint = true;
   std::string getFileExt(const QString& s);
+
+  void clear_variables(void);
 
 protected:
   void initializeGL() override;

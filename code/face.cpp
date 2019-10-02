@@ -108,6 +108,7 @@ void FaceCollection::fromStl(const QString &path)
 
 void FaceCollection::update_init_scale(void)
 {
+    init_scale = 1;
     cout<<"updating init scale"<<endl;
     float max_value = 0;
     for (int face_index=0;face_index<faces.size();face_index++)
@@ -120,5 +121,5 @@ void FaceCollection::update_init_scale(void)
             }
         }
     }
-    init_scale = 1/max_value;
+    init_scale = (1/max_value)*0.8f;
 }

@@ -1,6 +1,7 @@
 #include "viewer_widget.h"
 #include <QResizeEvent>
 #include <QFileDialog>
+#include <iostream>
 
 ViewerWidget::ViewerWidget() {
   layout = new QGridLayout(this);
@@ -26,6 +27,7 @@ void ViewerWidget::loadFile() {
   QString file_name= QFileDialog::getOpenFileName(this, ("Open File"),QDir::currentPath(), ("Document files (*.json *.stl *.obj)"));
   gl_widget->loadFaces(file_name);
   gl_widget-> update();
+  std::cout<<"loadFile"<<std::endl;
 }
 
 void ViewerWidget::alphaSlide(int alpha){
