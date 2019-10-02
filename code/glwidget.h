@@ -5,6 +5,7 @@
 #include <QString>
 #include <QWidget>
 #include <QtGui>
+#include <string>
 
 #include "face.h"
 
@@ -15,12 +16,11 @@ public:
   Q_OBJECT
     static const int SORTING_ON = 0;
     static const int SORTING_OFF = 1;
-
     float _alphaNew = 1;
     int sorting = 0;
 
     float rotation_angle=0;
-    float zoomScale=1;//0.0693433;
+
     float speed_factor = 1;
     QPointF translation=QPoint(0.0f,0.0f);
     QPointF rotation=QPoint(1.0f,0.0f);
@@ -31,11 +31,13 @@ public:
   GLWidget(QWidget *parent = 0);
   ~GLWidget();
   QSize sizeHint() const { return QSize(400, 400); }
-
+  float zoomScale=1.0f;//0.0693433;
   QVector3D object2view(Face face, GLfloat *model);
   void loadFaces(const QString &path);
   void getAlpha(int);
   void get_sorting_index(int index);
+
+  std::string getFileExt(const QString& s);
 
 protected:
   void initializeGL() override;

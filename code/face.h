@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QVector3D>
+#include "GL/gl.h"
 
 QJsonArray vectorToJson(const QVector3D &vector);
 QVector3D vectorFromJson(const QJsonArray &array);
@@ -20,10 +21,12 @@ public:
 class FaceCollection {
 public:
     FaceCollection();
-
-
+    float init_scale = 1;
     std::vector<Face> faces;
+    unsigned int type = GL_TRIANGLES; //default value is TRIANGLES
     bool init;
     void fromJson(const QJsonArray &json);
     void fromStl(const QString &path);
+
+    void update_init_scale(void);
 };

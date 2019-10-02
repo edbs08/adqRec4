@@ -17,35 +17,55 @@ GLWidget::~GLWidget() {}
 
 
 void GLWidget::loadFaces(const QString &path) {
-#if 0
-    /*Implementation for json*/
-  QFile json_file(path);
-  if (!json_file.open(QIODevice::ReadOnly)) {
-    qWarning("Failed to open file");
-    exit(-1);
-  }
-  QByteArray json_data = json_file.readAll();
-  QJsonDocument json_document(QJsonDocument::fromJson(json_data));
-  face_collection.fromJson(json_document.array());
-#endif
+    string file_type = getFileExt(path);
+    if(file_type == "json")
+    {
+        /*Implementation for json*/
+        QFile json_file(path);
+        if (!json_file.open(QIODevice::ReadOnly)) {
+            qWarning("Failed to open file");
+            exit(-1);
+        }
+        QByteArray json_data = json_file.readAll();
+        QJsonDocument json_document(QJsonDocument::fromJson(json_data));
+        face_collection.fromJson(json_document.array());
 
-  QFile stl_file(path);
-  if (!stl_file.open(QIODevice::ReadOnly)) {
-    qWarning("Failed to open file");
-    exit(-1);
-  }
-  QByteArray stl_data = stl_file.readAll();
-  face_collection.fromStl(path);
+        face_collection.init=true;
+        cout<<" json file loaded "<<endl;
+    }
 
-  face_collection.init=true;
-  // update the display inside the widget
-  paintGL();
+    if(file_type == "stl")
+    {
+        getFileExt(path);
+        QFile stl_file(path);
+        if (!stl_file.open(QIODevice::ReadOnly)) {
+            qWarning("Failed to open file");
+            exit(-1);
+        }
+        face_collection.fromStl(path);
+
+        face_collection.init=true;
+        cout<<" stl file loaded "<<endl;
+
+    }
+
+    initializeGL();
+    // update the display inside the widget
+    paintGL();
 }
 
-void GLWidget::initializeGL() {
+string GLWidget::getFileExt(const QString& qs) {
 
-    static const float init_zoom = 0.0294083;
-   glClearColor(0.6f, 0.8f, 1.0f, 1.0f); // Set background color
+   std::string s = qs.toLocal8Bit().constData();
+   size_t i = s.rfind('.', s.length());
+   if (i != string::npos) {
+      return(s.substr(i+1, s.length() - i));
+   }
+
+   return("");
+}
+void GLWidget::initializeGL() {
+    glClearColor(0.6f, 0.8f, 1.0f, 1.0f); // Set background color
     glClearDepth(1.0f);                   // Set background depth to farthest
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
@@ -57,16 +77,21 @@ void GLWidget::initializeGL() {
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    glScalef(init_zoom, init_zoom, init_zoom);
+    if(face_collection.init==true)
+    {
+        cout<< "********** init"<<endl;
+        glScalef(face_collection.init_scale, face_collection.init_scale, face_collection.init_scale);
+        zoomScale = face_collection.init_scale;
+    }
 
     glDisable(GL_LIGHTING );
 }
 
 void GLWidget::paintGL() {
+    cout<< "********** paintGL"<<endl;
     QSize viewport_size = size();
     glViewport(0, 0, viewport_size.width(), viewport_size.height());
     float ar = (float) viewport_size.width() / (float) viewport_size.height();
-
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth buffers
     /*
@@ -102,39 +127,39 @@ void GLWidget::paintGL() {
   glGetFloatv(GL_MODELVIEW_MATRIX, m);
 
     /* Print the matrix */
-/*
+
   for(int i=0;i<16;i++)
   {
       cout<<m[i]<<" ";
   }
   cout<<endl;
-*/
 
   //*********** Draw the model//
   // Define vertices in counter-clockwise (CCW) order with normal pointing out
 
   QVector3D view_coords;
   vector<pair<float, int>> vp;
+  double max_value = 0;
 
-
-  for (int face_index=0;face_index<face_collection.faces.size();face_index++)
+  if(sorting== SORTING_ON)
   {
-      Face face = face_collection.faces[face_index];
-      view_coords = object2view(face, m);
-      vp.push_back(make_pair(view_coords.z(), face_index));
+      for (int face_index=0;face_index<face_collection.faces.size();face_index++)
+      {
+          Face face = face_collection.faces[face_index];
+          view_coords = object2view(face, m);
+          vp.push_back(make_pair(view_coords.z(), face_index));
+      }
+      sort(vp.begin(), vp.end());
+      reverse(vp.begin(),vp.end());
+
   }
-  sort(vp.begin(), vp.end());
-  reverse(vp.begin(),vp.end());
-
-
   if(face_collection.init==true)
   {
-      /*glDepthMask(GL_FALSE);*/
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glBlendEquation(GL_FUNC_ADD);
 
-      glBegin(GL_TRIANGLES);
+      glBegin(face_collection.type);
 
       for (int face_index=0;face_index<face_collection.faces.size();face_index++)
       {
@@ -150,17 +175,17 @@ void GLWidget::paintGL() {
 
           float color = face.c;//face_index/(float)face_collection.faces.size() - 0.1;//face.c;//float)// //
           glColor4f(color, color, color, _alphaNew);
-          glVertex3f( face.vertices[0].x(), face.vertices[0].y(), face.vertices[0].z());
-          glVertex3f( face.vertices[1].x(), face.vertices[1].y(), face.vertices[1].z());
-          glVertex3f( face.vertices[2].x(), face.vertices[2].y(), face.vertices[2].z());
-          //glVertex3f( face.vertices[3].x(), face.vertices[3].y(), face.vertices[3].z());
-
+          for(int vertex_index = 0;vertex_index<face.vertices.size();vertex_index++)
+          {
+              glVertex3f( face.vertices[vertex_index].x(), face.vertices[vertex_index].y(), face.vertices[vertex_index].z());
+              if(face.vertices[vertex_index].x()>max_value)
+              {
+                  max_value = face.vertices[vertex_index].x();
+              }
+          }
       }
        glEnd();
-
        glDisable(GL_BLEND);
-       /*glDepthMask(GL_TRUE);*/
-
 
   }
 }

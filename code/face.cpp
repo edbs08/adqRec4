@@ -53,34 +53,29 @@ FaceCollection::FaceCollection()
 }
 using namespace std;
 void FaceCollection::fromJson(const QJsonArray &json) {
-  faces.clear();
-  for (const QJsonValue &face : json) {
-    Face new_face;
-    new_face.fromJson(face.toObject());
-    faces.push_back(new_face);
-  }
+    type = GL_QUADS;
+    faces.clear();
+    for (const QJsonValue &face : json) {
+        Face new_face;
+        new_face.fromJson(face.toObject());
+        faces.push_back(new_face);
+    }
+    update_init_scale();
 }
 
-void FaceCollection::fromStl(const QString &path) {
-    cout<<"from stl function"<<endl;
+void FaceCollection::fromStl(const QString &path)
+{
+  type = GL_TRIANGLES;
   faces.clear();
   std::ifstream stlFile;
   stlFile.open(path.toStdString().c_str());
   if(!stlFile) // check if file can be found
   {
-      //MessageBox(0, "STL file not found.", 0, 0);
       std::cout<<"STL file not found."<<std::endl;
   }
 
   std::string ignore;
   stlFile >> ignore >> ignore; //ignore header: solid t=x.xx
-  uint index = 0;
-
-  int iIndex = 0;
-  int vIndex = 0;
-  //WORD indexTmp = 0;
-
-
   while(stlFile.peek() != EOF )
   {
       stlFile >> ignore >> ignore; // ignore "normal"
@@ -96,32 +91,34 @@ void FaceCollection::fromStl(const QString &path) {
       stlFile >> ignore >> ignore; // ignore "outer loop"
       for(int i = 0; i <= 2; ++i) // read the three vertices of a face
       {
-
           float vertex[3]={};
-
           stlFile >> ignore >> vertex[0] >> vertex[1] >> vertex[2];// >> ignore >> ignore;
           QVector3D Qvertex;
           Qvertex.setX(vertex[0]);
           Qvertex.setY(vertex[1]);
           Qvertex.setZ(vertex[2]);
           new_face.vertices.push_back(Qvertex);
-          //cout<<vertex[0]<<endl;
-          //cout<<vertex[1]<<endl;
-          //cout<<vertex[2]<<endl;
-#if 0
-          //if (!ContainsVertexIndex(vertexTmp, vertices, indexTmp)) // return vertex index of double
-          //{
-              mVertices.push_back(vertexTmp); //save newly created vertex
-
-              indexTmp = vIndex; // create index reference to the new vertex
-              vIndex++; // increment index
-          //}
-          mIndices.push_back(indexTmp);
-          iIndex++; // increment index
-#endif
       }
       stlFile >> ignore >> ignore; // endloop // endfacet
       faces.push_back(new_face);
   }
+  update_init_scale();
+}
 
+
+void FaceCollection::update_init_scale(void)
+{
+    cout<<"updating init scale"<<endl;
+    float max_value = 0;
+    for (int face_index=0;face_index<faces.size();face_index++)
+    {
+        for(int vertex_index = 0;vertex_index<faces[face_index].vertices.size();vertex_index++)
+        {
+            if(max_value < abs(faces[face_index].vertices[vertex_index].x()))
+            {
+                max_value = abs(faces[face_index].vertices[vertex_index].x());
+            }
+        }
+    }
+    init_scale = 1/max_value;
 }
