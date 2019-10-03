@@ -38,7 +38,6 @@ void GLWidget::loadFaces(const QString &path) {
 
     if(file_type == "stl")
     {
-        getFileExt(path);
         QFile stl_file(path);
         if (!stl_file.open(QIODevice::ReadOnly)) {
             qWarning("Failed to open file");
@@ -49,6 +48,17 @@ void GLWidget::loadFaces(const QString &path) {
         face_collection.init=true;
         cout<<" stl file loaded "<<endl;
 
+    }
+
+    if(file_type == "pgm3d")
+    {
+        QFile pgm3D_file(path);
+        if (!pgm3D_file.open(QIODevice::ReadOnly)) {
+            qWarning("Failed to open file");
+            exit(-1);
+        }
+        face_collection.frompgm3D(path);
+        face_collection.init=true;
     }
 
     zoomScale = face_collection.init_scale;
@@ -147,13 +157,13 @@ void GLWidget::paintGL() {
 
 
     /* Print the matrix */
-
+/*
   for(int i=0;i<16;i++)
   {
       cout<<m[i]<<" ";
   }
   cout<<endl;
-
+*/
   //*********** Draw the model//
   // Define vertices in counter-clockwise (CCW) order with normal pointing out
 
