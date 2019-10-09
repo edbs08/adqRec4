@@ -27,7 +27,6 @@ void ViewerWidget::loadFile() {
   QString file_name= QFileDialog::getOpenFileName(this, ("Open File"),QDir::currentPath(), ("Document files (*.json *.stl *.obj *.pgm3d)"));
   gl_widget->loadFaces(file_name);
   gl_widget-> update();
-  std::cout<<"loadFile"<<std::endl;
 }
 
 void ViewerWidget::alphaSlide(int alpha){

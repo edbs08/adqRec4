@@ -33,10 +33,10 @@ void GLWidget::loadFaces(const QString &path) {
         face_collection.fromJson(json_document.array());
 
         face_collection.init=true;
-        cout<<" json file loaded "<<endl;
+
     }
 
-    if(file_type == "stl")
+    else if(file_type == "stl")
     {
         QFile stl_file(path);
         if (!stl_file.open(QIODevice::ReadOnly)) {
@@ -46,11 +46,11 @@ void GLWidget::loadFaces(const QString &path) {
         face_collection.fromStl(path);
 
         face_collection.init=true;
-        cout<<" stl file loaded "<<endl;
+
 
     }
 
-    if(file_type == "pgm3d")
+    else if(file_type == "pgm3d")
     {
         QFile pgm3D_file(path);
         if (!pgm3D_file.open(QIODevice::ReadOnly)) {
@@ -61,10 +61,24 @@ void GLWidget::loadFaces(const QString &path) {
         face_collection.init=true;
     }
 
+    else if(file_type == "obj"){
+        QFile obj_file(path);
+        if (!obj_file.open(QIODevice::ReadOnly)) {
+            qWarning("Failed to open file");
+            exit(-1);
+        }
+        QByteArray obj_data = obj_file.readAll();
+        face_collection.fromObj(path);
+        face_collection.init=true;
+    }
+
+    else{
+        std::cerr << "Invalid file type";
+    }
+
     zoomScale = face_collection.init_scale;
     initializeGL();
-    // update the display inside the widget
-    //paintGL();
+
 }
 
 string GLWidget::getFileExt(const QString& qs) {
@@ -94,7 +108,6 @@ void GLWidget::initializeGL() {
     glClearDepth(1.0f);                   // Set background depth to farthest
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
-    //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Nice perspective corrections
     setMouseTracking(true);
 
     glMatrixMode(GL_PROJECTION);
@@ -102,6 +115,7 @@ void GLWidget::initializeGL() {
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+
 
     glDisable(GL_LIGHTING );
 }
@@ -132,7 +146,6 @@ void GLWidget::paintGL() {
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         first_paint = false;
-        cout<<"first paint"<<endl;
     }
     else
     {
@@ -156,14 +169,6 @@ void GLWidget::paintGL() {
     }
 
 
-    /* Print the matrix */
-/*
-  for(int i=0;i<16;i++)
-  {
-      cout<<m[i]<<" ";
-  }
-  cout<<endl;
-*/
   //*********** Draw the model//
   // Define vertices in counter-clockwise (CCW) order with normal pointing out
 
@@ -190,6 +195,7 @@ void GLWidget::paintGL() {
       glBlendEquation(GL_FUNC_ADD);
 
       glBegin(face_collection.type);
+
 
       for (int face_index=0;face_index<face_collection.faces.size();face_index++)
       {
@@ -225,9 +231,7 @@ QVector3D GLWidget::object2view(Face face, GLfloat *model){
 
     QVector4D center, view_vec;
     QVector3D view_coords;
-//    for(int i = 0; i < 16; i ++){
-//        cout << model[i] << endl;
-//    }
+
 
 
     center.setX((face.vertices[0].x() + face.vertices[2].x())/2.0);
@@ -239,7 +243,7 @@ QVector3D GLWidget::object2view(Face face, GLfloat *model){
     view_vec.setY(center.x()*model[1] + center.y()*model[5] + center.z()*model[9] + center.w()*model[13]);
     view_vec.setZ(center.x()*model[2] + center.y()*model[6] + center.z()*model[10] + center.w()*model[14]);
     view_vec.setW(center.x()*model[3] + center.y()*model[7] + center.z()*model[11] + center.w()*model[15]);
-    //cout << model[4] << endl;
+
     view_coords.setX(view_vec.x()/view_vec.w());
     view_coords.setY(view_vec.y()/view_vec.w());
     view_coords.setZ(view_vec.z()/view_vec.w());
@@ -273,26 +277,25 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event) {
     {
         if((mouse_pos.x()-old_point_t.x()) > 0)
         {
-            //cout<<"right"<<endl;
+
             displace.setX(1);
             //translation.rx()+=0.01;
         }
         if((mouse_pos.x()-old_point_t.x()) < 0)
         {
-            //cout<<"left"<<endl;
+
             displace.setX(-1);
             //translation.rx()-=0.01;
         }
 
         if((mouse_pos.y()-old_point_t.y()) > 0)
         {
-            //cout<<"up"<<endl;
             displace.setY(-1);
             //translation.ry()-=0.01;
         }
         if((mouse_pos.y()-old_point_t.y()) < 0)
         {
-            //cout<<"down"<<endl;
+
             displace.setY(1);
             //translation.ry()+=0.01;
         }
@@ -337,7 +340,6 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() ==  Qt::Key::Key_Shift)
     {
-        cout<<"SHIFT PRESSED"<<endl;
         speed_factor = 2;
     }
 }
@@ -346,7 +348,6 @@ void GLWidget::keyReleaseEvent(QKeyEvent *event)
 {
     if(event->key() ==  Qt::Key::Key_Shift)
     {
-        cout<<"SHIFT RELEASED"<<endl;
         speed_factor = 1;
     }
 }

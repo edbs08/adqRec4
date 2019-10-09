@@ -28,6 +28,7 @@ public:
     void fromJson(const QJsonArray &json);
     void fromStl(const QString &path);
     void frompgm3D(const QString &path);
+    void fromObj(const QString &path);
 
     void update_init_scale(void);
 };

@@ -164,7 +164,7 @@ void FaceCollection::frompgm3D(const QString &path) {
 void FaceCollection::update_init_scale(void)
 {
     init_scale = 1;
-    cout<<"updating init scale"<<endl;
+
     float max_value = 0;
     for (int face_index=0;face_index<faces.size();face_index++)
     {
@@ -177,4 +177,147 @@ void FaceCollection::update_init_scale(void)
         }
     }
     init_scale = (1/max_value)*0.8f;
+}
+void FaceCollection::fromObj(const QString &path) {
+
+    faces.clear();
+    //    FILE * objFile = fopen(path.toStdString().c_str(), "r");
+    std::ifstream in(path.toStdString().c_str(), std::ios::in);
+
+    if(!in) // check if file can be found
+    {
+        //MessageBox(0, "OBJ file not found.", 0, 0);
+        std::cout<<"OBJ file not found."<<std::endl;
+    }
+
+    vector<QVector3D> vertices_list;
+    vector<QVector3D> normal_list;
+    float x, y, z;
+    std::string line;
+    int i = 0;
+    while (std::getline(in, line))
+    {
+        //check v for vertices
+        if (line.substr(0,2)=="v "){
+            std::istringstream v(line.substr(2));
+            QVector3D Qvertex;
+            v>>x;v>>y;v>>z;
+            Qvertex.setX(x);
+            Qvertex.setY(y);
+            Qvertex.setZ(z);
+            vertices_list.push_back(Qvertex);
+        }
+        //check vn for normals
+        else if(line.substr(0,2)=="vn"){
+            QVector3D normal;
+            std::istringstream vn(line.substr(2));
+            vn>>x;vn>>y;vn>>z;
+            normal.setX(x);
+            normal.setY(y);
+            normal.setZ(z);
+            normal_list.push_back(normal);
+
+        }
+        //check for faces
+        else if(line.substr(0,2)=="f "){
+            Face new_face;
+            std::string delim = "/";
+            std::string delim2 = " ";
+            std::string line_seg = line.substr(1,std::string::npos);
+            int vI, nI;
+            std::vector<int> vertexIndex;
+            std::vector<int> normalIndex;
+
+            //sort through lines to retrieve vertices or normals, ignore texture
+            size_t start = line_seg.find_last_of(' ', (line_seg.find_first_not_of(' ')));
+            size_t end = line_seg.find(delim);
+            size_t space = line_seg.find(delim2, start + delim2.length());
+            int i = 0;
+            if(end!= std::string::npos){
+                while (end != std::string::npos)
+                {
+                    if (end < space){
+                        if(i == 0){
+                            std::istringstream fv(line_seg.substr(start, end -start));
+                            fv>>vI;
+                            vertexIndex.push_back(vI);
+                        }
+
+                        start = end + delim.length();
+                        end = line_seg.find(delim, start);
+                        i++;
+                    }
+                    else if(space < end){
+                        std::istringstream fn(line_seg.substr(start, space -start));
+                        fn>>nI;
+                        normalIndex.push_back(nI);
+                        i = 0;
+                        start = space + line_seg.substr(space, end - space).find_last_of(' ', (line_seg.find_first_not_of(' ')));
+                        std::istringstream fv(line_seg.substr(start, end - start));
+                        fv>>vI;
+                        vertexIndex.push_back(vI);
+                        start = end + delim.length();
+                        end = line_seg.find(delim, start);
+                        space = line_seg.find(delim2, end);
+                        i++;
+
+                    }
+
+                }
+                if(i == 0){
+                    std::istringstream fv(line_seg.substr(start, space -start));
+                    fv>>vI;
+                    vertexIndex.push_back(vI);
+                }
+                else if(i == 2){
+                    std::istringstream fn(line_seg.substr(start, space -start));
+                    fn>>nI;
+                    normalIndex.push_back(nI);
+
+                }
+            }
+            else{
+                while(space != std::string::npos){
+                    std::istringstream fv(line_seg.substr(start, space-start));
+                    fv>>vI;
+                    vertexIndex.push_back(vI);
+                    start = space + line_seg.substr(space, std::string::npos).find_last_of(' ', (line_seg.substr(space, std::string::npos).find_first_not_of(' ')));
+                    space = line_seg.find(delim2, start + delim2.length());
+                    i++;
+                }
+                std::istringstream fv(line_seg.substr(start, space -start));
+                fv>>vI;
+                vertexIndex.push_back(vI);
+            }
+
+            //put vertices and normals into face
+            int n_vertex = vertexIndex.size();
+            if(n_vertex == 3){
+                type = GL_TRIANGLES;
+            }
+            else if(n_vertex == 4){
+                type = GL_QUADS;
+            }
+            else if(n_vertex > 4){
+                qWarning("Obj may not render correctly,.obj reader only supports objects with faces up to order 4");
+            }
+            else{
+                qWarning("Obj may not render correctly with this file format");
+            }
+
+            for (int n=0; n< n_vertex; n++){
+                new_face.vertices.push_back(vertices_list[vertexIndex[n]-1]);
+                if(!normalIndex.empty()){
+                    new_face.normal.setX(normal_list[normalIndex[n]].x());
+                    new_face.normal.setY(normal_list[normalIndex[n]].y());
+                    new_face.normal.setZ(normal_list[normalIndex[n]].z());
+                }
+
+            }
+            faces.push_back(new_face);
+        }
+
+    }
+    update_init_scale();
+
 }
